@@ -6,12 +6,10 @@ require 'open-uri'
 
 def initialize_database(location)
   words = Array.new
-  if not File.exist?(location)
-    return false
-  else
-    File.open(location).each do |word|
-      words.push(word)
-    end
+  # Bail out if we don't have a working file
+  return false if not File.exist?(location)
+  File.open(location).each do |word|
+    words.push(word)
   end
   return words
 end
@@ -45,32 +43,33 @@ end
 def parselinks(links)
   linkstospider = Array.new
   links.each do |link|
-    puts link
-    addlink = nil
-    if link["href"] && link["href"].index('?url=http') && link["href"].index("webcache.google") == nil
-      addlink = link["href"].split('?url=')[1]
-    elsif link["href"] && link["href"].index('url?q=http') && link["href"].index("webcache.google") == nil
-      addlink = link["href"].split('url?q=')[1]
-    end
-    if addlink && cleanlink(addlink) 
-      linkstospider.push(addlink)
-    end
-  end
-  if linkstospider.count < 1
-    puts "Nothing Google like"
-    links.each do |link|
-      puts "Examining #{link['href']}"
-      if link["href"] && link["href"].index('google') == nil
-        if cleanlink(link["href"]) 
-          linkstospider.push(link["href"])
+    #puts link
+    if link["href"] then
+      # There seem to be two formats for links from Google that we're interested in
+      {'?url=http'=>'?url=', 'url?q=http'=>'url?q='}.each do |urlstring,splitstring|
+        if (link["href"].index(urlstring)) 
+          addlink = link["href"].split(splitstring)[1]
+          #puts "Got #{addlink}"
+          linkstospider.push(addlink) if addlink && cleanlink(addlink) 
         end
       end
     end
+    
   end
-  puts "\nParsed to:"
-  linkstospider.each do |slink|
-    puts slink
+  # If we didn't get any Google tracked type results, parse regular links
+  if linkstospider.count < 1
+    #puts "No Google tracked redirects, using old school links"
+    links.each do |link|
+      #puts "Examining #{link['href']}"
+      if link["href"] && link["href"].index('google') == nil
+        linkstospider.push(link["href"]) if cleanlink(link["href"]) 
+      end
+    end
   end
+  #puts "\nParsed to:"
+  #linkstospider.each do |slink|
+  #  puts slink
+  #end
   return linkstospider.count > 0 ? linkstospider[rand(linkstospider.count)] : ''
 end
 
