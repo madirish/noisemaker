@@ -40,28 +40,28 @@ def cleanlink(link)
   return (link && link[0..3] == 'http') ? link : false;
 end
 
-def parselinks(links)
+def parselinks(linksin)
+  # Ditch anchors without hrefs
+  links = linksin.reject { |x| x["href"] == nil }
   linkstospider = Array.new
   links.each do |link|
-    #puts link
-    if link["href"] then
-      # There seem to be two formats for links from Google that we're interested in
-      {'?url=http'=>'?url=', 'url?q=http'=>'url?q='}.each do |urlstring,splitstring|
-        if (link["href"].index(urlstring)) 
-          addlink = link["href"].split(splitstring)[1]
-          #puts "Got #{addlink}"
-          linkstospider.push(addlink) if addlink && cleanlink(addlink) 
-        end
+    #puts link  
+    # There seem to be two formats for links from Google that we're interested in
+    {'?url=http'=>'?url=', 'url?q=http'=>'url?q='}.each do |urlstring,splitstring|
+      if (link["href"].index(urlstring)) 
+        addlink = link["href"].split(splitstring)[1]
+        puts "Got #{addlink}"
+        linkstospider.push(addlink) if addlink && cleanlink(addlink) 
       end
     end
     
   end
   # If we didn't get any Google tracked type results, parse regular links
   if linkstospider.count < 1
-    #puts "No Google tracked redirects, using old school links"
+    puts "No Google tracked redirects, using old school links"
     links.each do |link|
-      #puts "Examining #{link['href']}"
-      if link["href"] && link["href"].index('google') == nil
+      puts "Examining #{link['href']}"
+      if link["href"].index('google') == nil
         linkstospider.push(link["href"]) if cleanlink(link["href"]) 
       end
     end
